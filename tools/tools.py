@@ -9,10 +9,6 @@ def generateFolders(start, end):
         if not os.path.exists(newpath):
             os.mkdir(newpath)
         try:
-            open(f"Day{i}\\data.txt", mode="x")
-        except FileExistsError:
-            print("File already Exists")
-        try:
             open(f"Day{i}\\answer1.py", mode="x")
         except FileExistsError:
             print("File already Exists")
@@ -30,18 +26,17 @@ def ints(s):
     return list(map(int, s.split()))
 
 def getInputData(day):
-    with open(f"Day{day}\\data.txt", mode="r") as f1:
-        if len(f1.read()) == 0:
-            f1 = open(f"Day{day}\\data.txt", mode="w")
+    try:
+        with open(f"Day{day}\\data.txt", mode="x") as f1:
             cookies = {"session": env.session_cookie}
             address = f"https://adventofcode.com/2024/day/{day}/input"
             r = requests.get(address, cookies=cookies)
-            if r.status_code != 404:
+            if r.status_code == 200:
                 f1.write(r.text)
                 print("Successfully retrieved data")
             else:
                 print(r.status_code)
-        else:
-            print("Already has data")
+    except FileExistsError:
+        print("File already created")
 
 getInputData()
