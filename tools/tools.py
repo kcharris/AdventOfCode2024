@@ -35,8 +35,10 @@ def getInputData(day):
                 f1.write(r.text)
                 print("Successfully retrieved data")
             else:
+                f1.close()
+                os.remove(f"Day{day}\\data.txt")
                 print(r.status_code)
     except FileExistsError:
         print("File already created")
 
-getInputData()
+getInputData(7)
