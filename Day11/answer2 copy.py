@@ -1,3 +1,4 @@
+from functools import cache
 f = open("Day11\data.txt")
 # f = open("Day11\data1.txt")
 
@@ -14,28 +15,27 @@ def getLen(n):
 
 dp = {}
 res = 0
-blinks = 75
+blinks = 25
 
+# @cache
 def dfs_helper(num, depth):
     if depth == 0:
         return 1
-    key = (num, depth)
-    if key in dp:
-        return dp[key]
-    dp[key] = 0
+    
+    res = 0
 
     if num == 0:
-        dp[key] += dfs_helper(1, depth-1)
+        res += dfs_helper(1, depth-1)
     elif getLen(num) % 2 == 0:
         st_num = str(num)
         l = int(st_num[:len(st_num)//2])
         r = int(st_num[len(st_num)//2:])
-        dp[key] += dfs_helper(l, depth-1)
-        dp[key] += dfs_helper(r, depth-1)
+        res += dfs_helper(l, depth-1)
+        res += dfs_helper(r, depth-1)
     else:
-        dp[key] += dfs_helper(num*2024, depth-1)
+        res += dfs_helper(num*2024, depth-1)
 
-    return dp[key]
+    return 1 + res
 
 for i in range(len(stones)):
     res += dfs_helper(stones[i], blinks)
