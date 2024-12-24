@@ -28,6 +28,9 @@ for s in gates:
         if a not in d:
             d[a] = None
     arr.append(m[0])
+del d["OR"]
+del d["AND"]
+del d["XOR"]
 
 # 8 wires, or 4 pairs, have been swapped and need to be found before the x and y numbers (from bit arrays) can perform addition.
 
