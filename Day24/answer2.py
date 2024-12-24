@@ -31,7 +31,7 @@ for s in gates:
 
 # 8 wires, or 4 pairs, have been swapped and need to be found before the x and y numbers (from bit arrays) can perform addition.
 
-def get_wires():
+def getWires(d):
     found = set()
     for k in d:
         if d[k] != None:
@@ -44,6 +44,7 @@ def get_wires():
                 if op == "OR":
                     if d[a] != None and d[b] != None:
                         d[c] = d[a] | d[b]
+                        found.add(c)
                     if d[a] == 1:
                         d[c] = 1
                         found.add(a)
@@ -58,6 +59,7 @@ def get_wires():
                 elif op == "AND":
                     if d[a] != None and d[b] != None:
                         d[c] = d[a] & d[b]
+                        found.add(c)
                     if d[c] != None:
                         if d[c] == 1:
                             d[a] = 1
@@ -80,20 +82,45 @@ def get_wires():
                 elif op == "XOR":
                     if d[a] != None and d[b] != None:
                         d[c] = d[a] ^ d[b]
+                        found.add(c)
                     if d[b] != None and d[c] != None:
                         d[a] = d[b] ^ d[c]
+                        found.add(a)
                     if d[a] != None and d[c] != None:
                         d[b] = d[a] ^ d[c]
+                        found.add(b)
     if len(d.keys()) != len(found):
+        print("???")
         return {}
     return d.copy()
 
-bit_arr = []
-for i in range(99, -1,-1):
-    curr_z = "z{:02d}".format(i)
-    if curr_z in d:
-        bit_arr.append(d[curr_z])
+def wireNum(d, l):
+    bit_arr = []
+    for i in range(99, -1,-1):
+        key = "{}{:02d}".format(l, i)
+        if key in d:
+            bit_arr.append(d[key])
+    return int("".join(map(str, bit_arr)),2)
 
-print(int("0b" + "".join(map(str, bit_arr)),2))
+def isValidXYZ(d):
+    x = wireNum(d, "x")
+    y = wireNum(d, "y")
+    z = wireNum(d, "z")
+    if x + y == z:
+        return True
+    return False
+
+updated_d = getWires(d.copy())
+print(wireNum(updated_d, "z"))
+print(isValidXYZ(updated_d))
+
+"""
+There are 4 pairs of gates whose output wires have been swapped.
+
+How do I test every swapped pair? ultimately n**4?
+n**2 on each level.
+
+can use dp on sorted d keys to reduce operations, might actually be possible.
+"""
 
 
