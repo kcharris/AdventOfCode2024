@@ -15,6 +15,9 @@ while i < len(arr):
     gates.append(arr[i].rstrip())
     i+=1
 
+# update code to first collect all the keys and set initial values to None
+# after setting values, update the values to match the initital input
+#
 d = {}
 for s in initial:
     m = re.findall(r"([\d\w]{3}): (\d)", s)
@@ -24,10 +27,13 @@ for s in initial:
 arr = []
 for s in gates:
     m = re.findall(r"([\d\w]{3}) (\w+) ([\d\w]{3}) -> ([\d\w]{3})", s)
+    arr.append(m[0])
+
+for m in arr:
     for a in m[0]:
         if a not in d:
             d[a] = None
-    arr.append(m[0])
+
 del d["OR"]
 del d["AND"]
 del d["XOR"]
@@ -125,5 +131,13 @@ n**2 on each level.
 
 can use dp on sorted d keys to reduce operations, might actually be possible.
 """
-
+while True:
+    arr_copy = arr.copy()
+    for i in range(len(arr)-1):
+        for j in range(i+1, len(arr)):
+            for k in range(len(arr)-1):
+                if k != i and k != j:
+                    for h in range(k + 1, len(arr)):
+                        if h != i and h != j:
+                            get
 
