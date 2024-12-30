@@ -1,6 +1,6 @@
 import re
 f = open("Day13\data.txt")
-f = open("Day13\data1.txt")
+# f = open("Day13\data1.txt")
 M = 10**14 + 7
 adjust = 10_000_000_000_000
 arr = []
@@ -20,19 +20,18 @@ def getCurrentVar(idx):
     prize = list(map(int, prize))
     return (a, b, prize)
 
-a = None
-b = None
-prize = None
 d = {}
-def findMinTokens():
-    curr_res = M
-    for ap in range(101):
-        for bp in range(101):
-            x = ap * a[0] + bp * b[0]
-            y = ap * a[1] + bp * b[1]
-            if [x, y] == prize:
-                curr_res = min(curr_res, ap * 3 + bp)
-    return curr_res
+def findMinTokens(a, b, prize):
+    px, py = prize
+    ax, ay = a
+    bx, by = b
+    ap = (px*by - py*bx) // (ax*by - ay*bx)
+    bp = (ax*py - ay*px) // (ax*by - ay*bx)
+
+    ans_x, ans_y = ax * ap + bx * bp, ay * ap + by * bp
+    if (ans_x, ans_y) == tuple(prize):
+        return ap * 3 + bp
+    return M
 
 res = 0
 for i in range(len(arr)//3):
@@ -40,9 +39,7 @@ for i in range(len(arr)//3):
     a, b, prize = getCurrentVar(i)
     prize[0] += adjust
     prize[1] += adjust
-    curr_res = findMinTokens()
+    curr_res = findMinTokens(a, b, prize)
 
     res += curr_res if curr_res != M else 0
 print(res)
-
-
