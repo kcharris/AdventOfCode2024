@@ -23,7 +23,7 @@ a = None
 b = None
 prize = None
 d = {}
-def findMinTokens(num):
+def findMinTokens():
     curr_res = M
     for ap in range(101):
         for bp in range(101):
@@ -37,15 +37,9 @@ res = 0
 for i in range(len(arr)//3):
     d = {}
     a, b, prize = getCurrentVar(i)
-    prize[0] += 10_000_000_000_000
-    prize[1] += 10_000_000_000_000
-    curr_res = M
-    tab = [0 for _ in range(1001)]
-    for j in range(1001):
-        tab[j] = findMinTokens(j)
-    print(tab[100], tab[1000])
-
-    # res += curr_res if curr_res != M else 0
+    curr_res = findMinTokens()
+    
+    res += curr_res if curr_res != M else 0
 print(res)
 
 
