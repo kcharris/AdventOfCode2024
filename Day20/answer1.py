@@ -2,7 +2,7 @@ import networkx as nx
 from pprint import pprint
 import numpy as np
 f = open("Day20\data.txt")
-f = open("Day20\data1.txt")
+# f = open("Day20\data1.txt")
 
 M = 10**10
 area = []
@@ -34,36 +34,39 @@ for i in range(m):
         
 # set initial path legth and a dp tab using a bfs
 init_length = 0
-tab = [[0 for i in range(n)] for _ in range(m)]
-nodes = [end]
-while len(nodes):
-    next_nodes = []
+def getDistArr(arr, start):
+    tab = [[0 for i in range(n)] for _ in range(m)]
+    nodes = [start]
     while len(nodes):
-        curr_node = nodes.pop()
-        y, x = curr_node
-        for dy, dx in directions:
-            new_y = y + dy
-            new_x = x + dx
-            if withinBounds(new_y, new_x) and tab[new_y][new_x] == 0 and area[new_y][new_x] != "#":
-                tab[new_y][new_x] = tab[y][x] + 1
-                next_nodes.append((new_y, new_x))
-    nodes = next_nodes.copy()
-init_length = tab[start[0]][start[1]]
-tab[end[0]][end[1]] = 0
+        next_nodes = []
+        while len(nodes):
+            curr_node = nodes.pop()
+            y, x = curr_node
+            for dy, dx in directions:
+                new_y = y + dy
+                new_x = x + dx
+                if withinBounds(new_y, new_x) and tab[new_y][new_x] == 0 and arr[new_y][new_x] != "#":
+                    tab[new_y][new_x] = tab[y][x] + 1
+                    next_nodes.append((new_y, new_x))
+        nodes = next_nodes.copy()
+    tab[start[0]][start[1]] = 0
+    return tab.copy()
 
+start_tab = getDistArr(area, start)
+end_tab = getDistArr(area, end)
+init_length = end_tab[start[0]][start[1]]
 
-cheat_sec = 6
+cheat_sec = 2
 # gather the number of new paths based on path length into a counter
 costs = {}
 visited = set()
 for y in range(m):
-    curr_res = M
+    curr_saved = M
     for x in range(n):
         if area[y][x] == "#":
             continue
-        prev_area = area[y][x]
-        area[y][x] = "@"
         # I think the cheats are specific to walls and now I need to adjust the code to find paths through walls instead of compairing reachable tracks from any distance.
+        # ???
         for mult1 in range(cheat_sec + 1):
             for mult2 in range(cheat_sec+1):
                 if mult1 + mult2 == 0 or mult1 + mult2 > cheat_sec:
@@ -71,29 +74,19 @@ for y in range(m):
                 for i in range(len(directions)):
                     dy, dx = directions[i]
                     ty, tx = y +(dy*mult1), x+(dx*mult2)
-                    if not withinBounds(ty, tx) or (ty,tx) in visited:
+                    if not withinBounds(ty, tx) or area[ty][tx] == "#":
                         continue
-                    if area[ty][tx] != "#":
-                        prev_area2 = area[ty][tx]
-                        area[ty][tx] = "&"
-                        length = abs(tab[y][x] - tab[ty][tx])
-                        # print(np.matrix(area))
-                        # print(mult1 + mult2)
-                        # print(length)
-                        # print(costs)
-                        # input() 
-                        if length-2 > 0:
-                            curr_res = min(curr_res, init_length - length - 2)
-                        costs[curr_res] = costs.setdefault(curr_res, 0) + 1
-                        area[ty][tx] = prev_area2
-        
-        area[y][x] = prev_area
-        visited.add((y, x))
+                    # redo formula to use dist from start and dist from end
+                    length = abs(start_tab[y][x] + end_tab[ty][tx]) + (mult1 + mult2)
+                    # if length-2 > 0:
+                    # curr_res = min(curr_res, init_length - length - 2)
+
+                    curr_saved = init_length - length
+                    costs[curr_saved] = costs.setdefault(curr_saved, 0) + 1
 
 res = 0
 print([(k, costs[k]) for k in sorted(costs)])
 for k in costs:
-    if k >= 50 and k != M:
+    if k >= 100 and k != M:
         res += costs[k]
 print(res)
-
