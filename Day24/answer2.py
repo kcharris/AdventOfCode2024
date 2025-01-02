@@ -1,7 +1,7 @@
 import re
 from pprint import pprint
 f = open("Day24\data.txt")
-# f = open("Day24\data1.txt")
+f = open("Day24\data1.txt")
 
 arr = f.readlines()
 initial = []
@@ -18,37 +18,38 @@ while i < len(arr):
 # update code to first collect all the keys and set initial values to None
 # after setting values, update the values to match the initital input
 #
-d = {}
+initial_wires = {}
 for s in initial:
     m = re.findall(r"([\d\w]{3}): (\d)", s)
     a, b = m[0]
-    d[a] = int(b)
+    initial_wires[a] = int(b)
 
-arr = []
+gate_arr = []
 for s in gates:
     m = re.findall(r"([\d\w]{3}) (\w+) ([\d\w]{3}) -> ([\d\w]{3})", s)
-    arr.append(m[0])
+    gate_arr.append(list(m[0]))
 
-for m in arr:
-    for a in m[0]:
-        if a not in d:
-            d[a] = None
+# 8 gate outputs, or 4 pairs, have been swapped and need to be found before the x and y numbers (from bit arrays) can perform addition.
+def getWires(initial_wires, gate_arr):
+    d = initial_wires.copy()
+    for m in gate_arr:
+        for a in m:
+            if a not in d:
+                d[a] = None
+    if "OR" in d: del d["OR"]
+    if "AND" in d: del d["AND"]
+    if "XOR" in d: del d["XOR"]
 
-del d["OR"]
-del d["AND"]
-del d["XOR"]
-
-# 8 wires, or 4 pairs, have been swapped and need to be found before the x and y numbers (from bit arrays) can perform addition.
-
-def getWires(d):
     found = set()
     for k in d:
         if d[k] != None:
             found.add(k)
-    count = 1000
-    while len(d.keys()) > len(found) and count > 0:
-        count -= 1
-        for a, op, b, c in arr:
+    prev = 0
+    count = -1
+    while len(d.keys()) > len(found) and prev != count:
+        prev = count
+        count = 0
+        for a, op, b, c in gate_arr:
             if d[a] == None or d[b] == None or d[c] == None:
                 if op == "OR":
                     if d[a] != None and d[b] != None:
@@ -98,10 +99,9 @@ def getWires(d):
                     if d[a] != None and d[c] != None:
                         d[b] = d[a] ^ d[c]
                         found.add(b)
-    if len(d.keys()) != len(found):
-        print("???")
-        return {}
-    return d.copy()
+            else:
+                count += 1
+    return d
 
 def wireNum(d, l):
     bit_arr = []
@@ -109,35 +109,59 @@ def wireNum(d, l):
         key = "{}{:02d}".format(l, i)
         if key in d:
             bit_arr.append(d[key])
-    return int("".join(map(str, bit_arr)),2)
+    return int("".join(map(str, bit_arr)),2), len(bit_arr)
 
 def isValidXYZ(d):
-    x = wireNum(d, "x")
-    y = wireNum(d, "y")
-    z = wireNum(d, "z")
-    if x + y == z:
+    for k in d:
+        if d[k] == None:
+            return False
+    x, x_msb = wireNum(d, "x")
+    y, y_msb = wireNum(d, "y")
+    z, z_msb = wireNum(d, "z")
+    if (x + y) % 2**(z_msb) == z:
         return True
     return False
-
-updated_d = getWires(d.copy())
-print(wireNum(updated_d, "z"))
-print(isValidXYZ(updated_d))
 
 """
 There are 4 pairs of gates whose output wires have been swapped.
 
 How do I test every swapped pair? ultimately n**4?
-n**2 on each level.
+n on each level.
 
 can use dp on sorted d keys to reduce operations, might actually be possible.
 """
-while True:
-    arr_copy = arr.copy()
-    for i in range(len(arr)-1):
-        for j in range(i+1, len(arr)):
-            for k in range(len(arr)-1):
-                if k != i and k != j:
-                    for h in range(k + 1, len(arr)):
-                        if h != i and h != j:
-                            get
-
+# while True:
+#     arr_copy = arr.copy()
+#     for i in range(len(arr)-1):
+#         for j in range(i+1, len(arr)):
+#             for k in range(len(arr)-1):
+#                 if k != i and k != j:
+#                     for h in range(k + 1, len(arr)):
+#                         if h != i and h != j:
+#                             get
+memo = {}
+# try all pairs with memo
+def dfs(visited, num_pairs=4):
+    if len(visited) == num_pairs:
+        updated_d = getWires(initial_wires, gate_arr)
+        if isValidXYZ(updated_d):
+            return sorted([gate_arr[x][3] for x in visited])
+        return None
+    key = str(sorted(visited))
+    if key in memo:
+        return memo[key]
+    memo[key] = None
+    # n**2
+    for i in range(len(gate_arr)):
+        for j in range(i+1, len(gate_arr)):
+            pair = (i, j)
+            if pair not in visited:
+                visited.add(pair)
+                gate_arr[i][3], gate_arr[j][3] = gate_arr[j][3], gate_arr[i][3]
+                curr = dfs(visited, num_pairs)
+                if curr != None:
+                    memo[key] = curr
+                gate_arr[i][3], gate_arr[j][3] = gate_arr[j][3], gate_arr[i][3]
+                visited.remove(pair)
+    return memo[key]
+print(dfs(set()))
