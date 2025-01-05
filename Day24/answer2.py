@@ -1,37 +1,56 @@
 import re
-from pprint import pprint
-f = open("Day24\data.txt")
-f = open("Day24\data1.txt")
+import matplotlib.pyplot as plt
+from random import randint
 
-arr = f.readlines()
-initial = []
-gates = []
-i = 0
-while arr[i] != "\n":
-    initial.append(arr[i].rstrip())
-    i+=1
-i += 1
-while i < len(arr):
-    gates.append(arr[i].rstrip())
-    i+=1
+def getAndParseInput():
+    f = open("Day24\data.txt")
+    arr = f.readlines()
+    initial = []
+    gates = []
+    i = 0
+    while arr[i] != "\n":
+        initial.append(arr[i].rstrip())
+        i+=1
+    i += 1
+    while i < len(arr):
+        gates.append(arr[i].rstrip())
+        i+=1
 
-# update code to first collect all the keys and set initial values to None
-# after setting values, update the values to match the initital input
-#
-initial_wires = {}
-for s in initial:
-    m = re.findall(r"([\d\w]{3}): (\d)", s)
-    a, b = m[0]
-    initial_wires[a] = int(b)
+    initial_wires = {}
+    for s in initial:
+        m = re.findall(r"([\d\w]{3}): (\d)", s)
+        a, b = m[0]
+        initial_wires[a] = int(b)
 
-gate_arr = []
-for s in gates:
-    m = re.findall(r"([\d\w]{3}) (\w+) ([\d\w]{3}) -> ([\d\w]{3})", s)
-    gate_arr.append(list(m[0]))
+    gate_arr = []
+    for s in gates:
+        m = re.findall(r"([\d\w]{3}) (\w+) ([\d\w]{3}) -> ([\d\w]{3})", s)
+        gate_arr.append(list(m[0]))
+    return gate_arr, initial_wires
+gate_arr, initial_wires = getAndParseInput()
 
-# 8 gate outputs, or 4 pairs, have been swapped and need to be found before the x and y numbers (from bit arrays) can perform addition.
-def getWires(initial_wires, gate_arr):
+def setRandInitialWires(d):
+    def setLetter(l, d):
+        x = randint(10**14, 10**15)
+        i = 0
+        while x > 0:
+            key = "{}{:02d}".format(l, i)
+            if key not in d:
+                break
+            else:
+                curr_bit = x % 2
+                x //= 2
+                d[key] = curr_bit
+            i += 1
+    setLetter("x", d)
+    setLetter('y', d)
+
+# Attempt to deduce and the unknown wire values based on boolean logic
+# Allows the option to set initial x and y values to random numbers
+def getWires(initial_wires, gate_arr, random_xy=False):
     d = initial_wires.copy()
+    if random_xy == True:
+        setRandInitialWires(d)
     for m in gate_arr:
         for a in m:
             if a not in d:
@@ -103,7 +122,7 @@ def getWires(initial_wires, gate_arr):
                 count += 1
     return d
 
-def wireNum(d, l):
+def wireNumAndMSB(d, l):
     bit_arr = []
     for i in range(99, -1,-1):
         key = "{}{:02d}".format(l, i)
@@ -115,53 +134,88 @@ def isValidXYZ(d):
     for k in d:
         if d[k] == None:
             return False
-    x, x_msb = wireNum(d, "x")
-    y, y_msb = wireNum(d, "y")
-    z, z_msb = wireNum(d, "z")
+    x, x_msb = wireNumAndMSB(d, "x")
+    y, y_msb = wireNumAndMSB(d, "y")
+    z, z_msb = wireNumAndMSB(d, "z")
     if (x + y) % 2**(z_msb) == z:
         return True
     return False
 
-"""
-There are 4 pairs of gates whose output wires have been swapped.
-
-How do I test every swapped pair? ultimately n**4?
-n on each level.
-
-can use dp on sorted d keys to reduce operations, might actually be possible.
-"""
-# while True:
-#     arr_copy = arr.copy()
-#     for i in range(len(arr)-1):
-#         for j in range(i+1, len(arr)):
-#             for k in range(len(arr)-1):
-#                 if k != i and k != j:
-#                     for h in range(k + 1, len(arr)):
-#                         if h != i and h != j:
-#                             get
-memo = {}
-# try all pairs with memo
-def dfs(visited, num_pairs=4):
-    if len(visited) == num_pairs:
-        updated_d = getWires(initial_wires, gate_arr)
-        if isValidXYZ(updated_d):
-            return sorted([gate_arr[x][3] for x in visited])
-        return None
-    key = str(sorted(visited))
-    if key in memo:
-        return memo[key]
-    memo[key] = None
-    # n**2
+# Uses properties of ALU's full adder required output gates to get easy to find bad wires.
+def getBadIdxs():
+    start_wires = ["y", "x"]
+    bad_idxs = []
     for i in range(len(gate_arr)):
-        for j in range(i+1, len(gate_arr)):
-            pair = (i, j)
-            if pair not in visited:
-                visited.add(pair)
-                gate_arr[i][3], gate_arr[j][3] = gate_arr[j][3], gate_arr[i][3]
-                curr = dfs(visited, num_pairs)
-                if curr != None:
-                    memo[key] = curr
-                gate_arr[i][3], gate_arr[j][3] = gate_arr[j][3], gate_arr[i][3]
-                visited.remove(pair)
-    return memo[key]
-print(dfs(set()))
+        a, b, c, d = gate_arr[i]
+        if (
+            d[0] == "z" and b != "XOR" # and
+            # a[0] in start_wires and c[0] in start_wires
+            ):
+            bad_idxs.append(i)
+        if (
+            a[0] not in start_wires and
+            c[0] not in start_wires and
+            b == "XOR" and 
+            d[0] != "z"
+            ):
+            bad_idxs.append(i)
+    return bad_idxs
+
+def isValidGateArr(gate_arr, times=5):
+    for _ in range(times):
+        updated_d = getWires(initial_wires, gate_arr, random_xy=True)
+        if isValidXYZ(updated_d) == False:
+            return False
+    return True
+
+def findWrongBits(x, y, z):
+    count = 0
+    wrong_bits = []
+    wire_sum = x + y
+    while z > 0:
+        if z % 2 != wire_sum % 2:
+            wrong_bits.append(count)
+        z //= 2
+        wire_sum //= 2
+        count += 1
+    return wrong_bits[::-1]
+
+bad_idxs = getBadIdxs()
+print("Bad z's: ", "".join(sorted([str((gate_arr[i][3], i)) for i in bad_idxs])))
+nonz = list(map(lambda i: (gate_arr[i][3], i), filter(lambda i: gate_arr[i][3][0] != "z", bad_idxs)))
+hasz = list(map(lambda i: (gate_arr[i][3], i), filter(lambda i: gate_arr[i][3][0] == "z", bad_idxs)))
+hasz.remove(("z45", 52))
+
+def dfs(visited):
+    if len(visited) == 6:
+        for i in range(len(gate_arr)):
+            if i not in visited:
+                visited.add(i)
+                for j in range(len(gate_arr)):
+                    if j not in visited:
+                        visited.add(j)
+                        gate_arr[i][3], gate_arr[j][3] = gate_arr[j][3], gate_arr[i][3]
+                        flag = True
+                        if isValidGateArr(gate_arr, times=20):
+                            print([(gate_arr[k][3], k) for k in visited])
+                            print(",".join(sorted(map(lambda a: gate_arr[a][3], visited))))
+                        visited.remove(j)
+                        gate_arr[i][3], gate_arr[j][3] = gate_arr[j][3], gate_arr[i][3]
+                visited.remove(i)
+        return 0
+    res = None
+    for k1, i in nonz:
+        if i not in visited:
+            visited.add(i)
+            for k2, j in hasz:
+                if j not in visited:
+                    visited.add(j)
+                    gate_arr[i][3], gate_arr[j][3] = gate_arr[j][3], gate_arr[i][3]
+                    curr = dfs(visited)
+                    if curr != None:
+                        res = curr
+                    gate_arr[i][3], gate_arr[j][3] = gate_arr[j][3], gate_arr[i][3]
+                    visited.remove(j)
+            visited.remove(i)
+    return res
+dfs(set())
