@@ -1,6 +1,6 @@
 import networkx as nx
 f = open("Day23\data.txt")
-f = open("Day23\data1.txt")
+# f = open("Day23\data1.txt")
 
 g = nx.Graph()
 for line in f.readlines():
